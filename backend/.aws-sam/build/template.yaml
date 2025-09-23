@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless Task Manager (S3 frontend not included)
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Timeout: 10
+    MemorySize: 256
+    Environment:
+      Variables:
+        TASKS_TABLE:
+          Ref: TasksTable
+        SES_FROM_ADDRESS: no-reply@example.com
+Resources:
+  TaskApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: '''GET,POST,PUT,OPTIONS'''
+        AllowHeaders: '''Content-Type'''
+        AllowOrigin: '''*'''
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Tasks
+      AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+  CreateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: createTask.handler
+      CodeUri: CreateTaskFunction
+      Runtime: nodejs18.x
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: TasksTable
+      - Statement:
+          Effect: Allow
+          Action:
+          - ses:SendEmail
+          - ses:SendRawEmail
+          Resource: '*'
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: TasksTable
+      Events:
+        CreateTaskApi:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: post
+            RestApiId:
+              Ref: TaskApi
+    Metadata:
+      SamResourceId: CreateTaskFunction
+  ListTasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: listTasks.handler
+      CodeUri: ListTasksFunction
+      Runtime: nodejs18.x
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: TasksTable
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: TasksTable
+      Events:
+        ListTasksApi:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: get
+            RestApiId:
+              Ref: TaskApi
+    Metadata:
+      SamResourceId: ListTasksFunction
+  UpdateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: updateTask.handler
+      CodeUri: UpdateTaskFunction
+      Runtime: nodejs18.x
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: TasksTable
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: TasksTable
+      Events:
+        UpdateTaskApi:
+          Type: Api
+          Properties:
+            Path: /tasks/{id}
+            Method: put
+            RestApiId:
+              Ref: TaskApi
+    Metadata:
+      SamResourceId: UpdateTaskFunction
+Outputs:
+  ApiUrl:
+    Description: API endpoint
+    Value:
+      Fn::Sub: https://${TaskApi}.execute-api.${AWS::Region}.amazonaws.com/Prod

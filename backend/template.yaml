@@ -36,18 +36,12 @@ Resources:
   CreateTaskFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: createTask.handler
+      Handler: create_task.handler
       CodeUri: src/
-      Runtime: nodejs18.x
+      Runtime: python3.12
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref TasksTable
-        - Statement:
-            Effect: Allow
-            Action:
-              - ses:SendEmail
-              - ses:SendRawEmail
-            Resource: "*"
       Environment:
         Variables:
           TABLE_NAME: !Ref TasksTable
@@ -62,9 +56,9 @@ Resources:
   ListTasksFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: listTasks.handler
+      Handler: list_tasks.handler
       CodeUri: src/
-      Runtime: nodejs18.x
+      Runtime: python3.12
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TasksTable
@@ -98,6 +92,44 @@ Resources:
             Path: /tasks/{id}
             Method: put
             RestApiId: !Ref TaskApi
+
+  GetUploadURLFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: get_upload_url.handler
+      CodeUri: src/
+      Runtime: python3.12
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub "${TaskImagesBucket.Arn}/*"
+      Environment:
+        Variables:
+          IMAGES_BUCKET: !Ref TaskImagesBucket
+      Events:
+        GetUploadUrlApi:
+          Type: Api
+          Properties:
+            Path: /upload-url
+            Method: get
+            RestApiId: !Ref TaskApi
+
+  TaskImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "taskmaster-images-${AWS::AccountId}"
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - "*"    # ⚠️ en producción conviene limitar al dominio del frontend
+            AllowedMethods:
+              - PUT
+              - GET
+              - POST
+            AllowedHeaders:
+              - "*"
 
 Outputs:
   ApiUrl:

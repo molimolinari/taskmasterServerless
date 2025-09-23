@@ -34,19 +34,13 @@ Resources:
   CreateTaskFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: createTask.handler
+      Handler: create_task.handler
       CodeUri: CreateTaskFunction
-      Runtime: nodejs18.x
+      Runtime: python3.12
       Policies:
       - DynamoDBCrudPolicy:
           TableName:
             Ref: TasksTable
-      - Statement:
-          Effect: Allow
-          Action:
-          - ses:SendEmail
-          - ses:SendRawEmail
-          Resource: '*'
       Environment:
         Variables:
           TABLE_NAME:
@@ -64,9 +58,9 @@ Resources:
   ListTasksFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: listTasks.handler
+      Handler: list_tasks.handler
       CodeUri: ListTasksFunction
-      Runtime: nodejs18.x
+      Runtime: python3.12
       Policies:
       - DynamoDBReadPolicy:
           TableName:
@@ -109,6 +103,48 @@ Resources:
               Ref: TaskApi
     Metadata:
       SamResourceId: UpdateTaskFunction
+  GetUploadURLFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: get_upload_url.handler
+      CodeUri: GetUploadURLFunction
+      Runtime: python3.12
+      Policies:
+      - Statement:
+        - Effect: Allow
+          Action:
+          - s3:PutObject
+          Resource:
+            Fn::Sub: ${TaskImagesBucket.Arn}/*
+      Environment:
+        Variables:
+          IMAGES_BUCKET:
+            Ref: TaskImagesBucket
+      Events:
+        GetUploadUrlApi:
+          Type: Api
+          Properties:
+            Path: /upload-url
+            Method: get
+            RestApiId:
+              Ref: TaskApi
+    Metadata:
+      SamResourceId: GetUploadURLFunction
+  TaskImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: taskmaster-images-${AWS::AccountId}
+      CorsConfiguration:
+        CorsRules:
+        - AllowedOrigins:
+          - '*'
+          AllowedMethods:
+          - PUT
+          - GET
+          - POST
+          AllowedHeaders:
+          - '*'
 Outputs:
   ApiUrl:
     Description: API endpoint

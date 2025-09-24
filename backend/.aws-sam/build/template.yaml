@@ -31,6 +31,8 @@ Resources:
       - AttributeName: id
         KeyType: HASH
       BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
   CreateTaskFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -145,6 +147,35 @@ Resources:
           - POST
           AllowedHeaders:
           - '*'
+  SendTaskEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: send_task_email.handler
+      Runtime: python3.12
+      CodeUri: SendTaskEmailFunction
+      Policies:
+      - AmazonDynamoDBReadOnlyAccess
+      - Statement:
+          Effect: Allow
+          Action:
+          - ses:SendEmail
+          - ses:SendRawEmail
+          Resource: '*'
+      Environment:
+        Variables:
+          SENDER_EMAIL: pablofmoli@gmail.com
+          RECIPIENT_EMAIL: natu.brunsteins@gmail.com
+      Events:
+        DynamoDBStream:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Fn::GetAtt:
+              - TasksTable
+              - StreamArn
+            StartingPosition: LATEST
+    Metadata:
+      SamResourceId: SendTaskEmailFunction
 Outputs:
   ApiUrl:
     Description: API endpoint

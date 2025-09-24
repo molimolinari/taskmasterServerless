@@ -6,11 +6,13 @@ import uuid
 s3 = boto3.client("s3")
 BUCKET_NAME = os.environ.get("IMAGES_BUCKET")
 
-def lambda_handler(event, context):
+def handler(event, context):
+    print("Evento recibido:", json.dumps(event))  # 👈 Log completo
     try:
-        body = json.loads(event["body"])
-        file_name = body.get("fileName", str(uuid.uuid4()))
-        file_type = body.get("fileType", "image/jpeg")
+        qs = event.get("queryStringParameters") or {}
+        file_name = qs.get("filename", str(uuid.uuid4()))
+
+        file_type = qs.get("fileType", "image/jpeg")
 
         presigned_url = s3.generate_presigned_url(
             "put_object",

@@ -16,6 +16,6 @@ architecture = "x86_64"
 handler = "create_task.handler"
 manifest_hash = ""
 packagetype = "Zip"
-functions = ["CreateTaskFunction", "ListTasksFunction", "GetUploadURLFunction"]
+functions = ["CreateTaskFunction", "ListTasksFunction", "GetUploadURLFunction", "SendTaskEmailFunction"]
 
 [layer_build_definitions]

@@ -13,10 +13,12 @@ def handler(event, context):
         
         task_id = str(uuid.uuid4())
         task_item = {
-            "id": task_id,
-            "title": body.get("title", ""),
+            "id": str(uuid.uuid4()),
+            "description": body.get("description", ""),
             "responsible": body.get("responsible", ""),
+            "dueDate": body.get("dueDate", ""),
             "notes": body.get("notes", ""),
+            "image": body.get("image", ""),   # URL de S3 (si viene del frontend)
             "completed": False,
             "createdAt": datetime.utcnow().isoformat()
         }

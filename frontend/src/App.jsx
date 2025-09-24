@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import './App.css'  // 👈 nuevo
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -15,23 +16,21 @@ function App() {
     const data = await res.json()
     setTasks(data)
   }
+
   const uploadImage = async (file) => {
-    // pedir pre-signed URL al backend
     const res = await fetch(`${API_URL}/upload-url?filename=${encodeURIComponent(file.name)}`)
     const { uploadUrl, fileUrl } = await res.json()
 
-    // subir archivo a S3
     await fetch(uploadUrl, {
       method: "PUT",
       headers: { "Content-Type": file.type },
       body: file
     })
 
-    return fileUrl // devolver URL pública para DynamoDB
-  }  
+    return fileUrl
+  }
 
-
-const addTask = async () => {
+  const addTask = async () => {
     if (!description) return
 
     let imageUrl = null
@@ -39,7 +38,6 @@ const addTask = async () => {
       imageUrl = await uploadImage(image)
     }
 
-    // armar payload con metadata
     const taskData = {
       description,
       responsible,
@@ -55,7 +53,6 @@ const addTask = async () => {
       body: JSON.stringify(taskData)
     })
 
-    // limpiar formulario
     setDescription("")
     setResponsible("")
     setDueDate("")
@@ -79,9 +76,13 @@ const addTask = async () => {
   }, [])
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h1>Tareas para Natasha</h1>
-      <form onSubmit={(e) => { e.preventDefault(); addTask(); }}>
+    <div className="app-container">
+      <header className="app-header">
+        <img src="/logo.png" alt="TaskMaster Logo" className="logo" />
+        <h1>Tareas para Natasha</h1>
+      </header>
+
+      <form className="task-form" onSubmit={(e) => { e.preventDefault(); addTask(); }}>
         <input
           type="text"
           value={description}
@@ -112,9 +113,10 @@ const addTask = async () => {
         />
         <button type="submit">Agregar</button>
       </form>
-      <ul>
+
+      <ul className="task-list">
         {tasks.map(task => (
-          <li key={task.id} style={{ marginBottom: "10px" }}>
+          <li key={task.id} className="task-card">
             <div>
               <strong>{task.description}</strong>
             </div>
@@ -123,7 +125,7 @@ const addTask = async () => {
             {task.notes && <div>Notas: {task.notes}</div>}
             {task.image && (
               <div>
-                <img src={task.image} alt="Adjunto" style={{ maxWidth: "150px", marginTop: "5px" }} />
+                <img src={task.image} alt="Adjunto" />
               </div>
             )}
             {!task.completed && (
@@ -132,7 +134,6 @@ const addTask = async () => {
           </li>
         ))}
       </ul>
-
     </div>
   )
 }

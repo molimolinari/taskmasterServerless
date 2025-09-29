@@ -84,9 +84,9 @@ Resources:
   UpdateTaskFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: updateTask.handler
+      Handler: update_task.handler
       CodeUri: UpdateTaskFunction
-      Runtime: nodejs18.x
+      Runtime: python3.12
       Policies:
       - DynamoDBCrudPolicy:
           TableName:

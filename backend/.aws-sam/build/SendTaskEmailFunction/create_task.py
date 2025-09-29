@@ -18,7 +18,8 @@ def handler(event, context):
             "responsible": body.get("responsible", ""),
             "dueDate": body.get("dueDate", ""),
             "notes": body.get("notes", ""),
-            "image": body.get("image", ""),   # URL de S3 (si viene del frontend)
+            "files": body.get("files", []),   # List of S3 URLs
+            "audio": body.get("audio", ""),   # URL de S3 (si viene del frontend)
             "completed": False,
             "createdAt": datetime.utcnow().isoformat()
         }

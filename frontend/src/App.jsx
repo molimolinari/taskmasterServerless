@@ -10,6 +10,49 @@ function App() {
   const [dueDate, setDueDate] = useState("")
   const [notes, setNotes] = useState("")
   const [image, setImage] = useState(null)
+  // Calculate min date (today + 2 days)
+  const minDueDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    return d.toISOString().split('T')[0];
+  })();
+
+  // Voice recording state
+  const [recording, setRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [audioURL, setAudioURL] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null);
+
+  // Start recording
+  const startRecording = async () => {
+    if (!navigator.mediaDevices) {
+      alert('La grabación de audio no es compatible con este navegador.');
+      return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new window.MediaRecorder(stream);
+    let chunks = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      setAudioBlob(blob);
+      setAudioURL(URL.createObjectURL(blob));
+      chunks = [];
+    };
+    recorder.start();
+    setMediaRecorder(recorder);
+    setRecording(true);
+  };
+
+  // Stop recording
+  const stopRecording = () => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setRecording(false);
+    }
+  };
 
   const fetchTasks = async () => {
     const res = await fetch(`${API_URL}/tasks`)
@@ -17,25 +60,34 @@ function App() {
     setTasks(data)
   }
 
-  const uploadImage = async (file) => {
-    const res = await fetch(`${API_URL}/upload-url?filename=${encodeURIComponent(file.name)}`)
-    const { uploadUrl, fileUrl } = await res.json()
+  // General file upload (image, audio, etc)
+  const uploadFile = async (file) => {
+    const fileType = file.type || 'application/octet-stream';
+    const res = await fetch(`${API_URL}/upload-url?filename=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(fileType)}`);
+    const { uploadUrl, fileUrl } = await res.json();
 
     await fetch(uploadUrl, {
       method: "PUT",
-      headers: { "Content-Type": file.type },
+      headers: { "Content-Type": fileType },
       body: file
-    })
+    });
 
-    return fileUrl
+    return fileUrl;
   }
 
   const addTask = async () => {
     if (!description) return
 
-    let imageUrl = null
+    let imageUrl = null;
     if (image) {
-      imageUrl = await uploadImage(image)
+      imageUrl = await uploadFile(image);
+    }
+
+    // Upload audio if present
+    let audioUrl = null;
+    if (audioBlob) {
+      const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, { type: 'audio/webm' });
+      audioUrl = await uploadFile(audioFile);
     }
 
     const taskData = {
@@ -44,7 +96,8 @@ function App() {
       dueDate,
       notes,
       completed: false,
-      image: imageUrl
+      image: imageUrl,
+      audio: audioUrl
     }
 
     await fetch(`${API_URL}/tasks`, {
@@ -58,6 +111,8 @@ function App() {
     setDueDate("")
     setNotes("")
     setImage(null)
+    setAudioBlob(null)
+    setAudioURL(null)
 
     fetchTasks()
   }
@@ -99,6 +154,7 @@ function App() {
         <input
           type="date"
           value={dueDate}
+          min={minDueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
         <textarea
@@ -111,6 +167,21 @@ function App() {
           accept="image/*"
           onChange={(e) => setImage(e.target.files[0])}
         />
+
+        {/* Voice recording UI */}
+        <div style={{ margin: '10px 0' }}>
+          <label>Mensaje de voz:</label><br />
+          {!recording && (
+            <button type="button" onClick={startRecording} style={{marginRight: 8}}>Grabar</button>
+          )}
+          {recording && (
+            <button type="button" onClick={stopRecording} style={{marginRight: 8}}>Detener</button>
+          )}
+          {audioURL && (
+            <audio src={audioURL} controls style={{ verticalAlign: 'middle', marginLeft: 8 }} />
+          )}
+        </div>
+
         <button type="submit">Agregar</button>
       </form>
 

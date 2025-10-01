@@ -167,7 +167,7 @@ function App() {
           id="responsible"
           value={responsible}
           onChange={(e) => setResponsible(e.target.value)}
-          placeholder="Autor"
+          placeholder="Nombre"
         />
         <label for="date">Ingrese la fecha de vencimiento de la tarea:</label>
         <input

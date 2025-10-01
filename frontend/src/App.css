@@ -1,5 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
 body {
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: 'Montserrat', Arial, sans-serif;
   background-color: #f4f6f8;
   margin: 0;
   padding: 0;

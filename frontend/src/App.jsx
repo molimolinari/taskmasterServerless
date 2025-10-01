@@ -9,7 +9,7 @@ function App() {
   const [responsible, setResponsible] = useState("")
   const [dueDate, setDueDate] = useState("")
   const [notes, setNotes] = useState("")
-  const [image, setImage] = useState(null)
+  const [files, setFiles] = useState([])
   // Calculate min date (today + 2 days)
   const minDueDate = (() => {
     const d = new Date();
@@ -78,9 +78,12 @@ function App() {
   const addTask = async () => {
     if (!description) return
 
-    let imageUrl = null;
-    if (image) {
-      imageUrl = await uploadFile(image);
+    let fileUrls = [];
+    if (files && files.length > 0) {
+      for (let file of files) {
+        const url = await uploadFile(file);
+        fileUrls.push(url);
+      }
     }
 
     // Upload audio if present
@@ -96,7 +99,7 @@ function App() {
       dueDate,
       notes,
       completed: false,
-      image: imageUrl,
+      files: fileUrls,
       audio: audioUrl
     }
 
@@ -110,7 +113,7 @@ function App() {
     setResponsible("")
     setDueDate("")
     setNotes("")
-    setImage(null)
+  setFiles([])
     setAudioBlob(null)
     setAudioURL(null)
 
@@ -122,9 +125,18 @@ function App() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed: true })
-    })
-    fetchTasks()
-  }
+    });
+    fetchTasks();
+  };
+
+  const cancelTask = async (id) => {
+    await fetch(`${API_URL}/tasks/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ canceled: true })
+    });
+    fetchTasks();
+  };
 
   useEffect(() => {
     fetchTasks()
@@ -133,44 +145,56 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <img src="/logo.png" alt="TaskMaster Logo" className="logo" />
-        <h1>Tareas para Natasha</h1>
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%'}}>
+          <img src="/logo.png" alt="TaskMaster Logo" className="logo" style={{marginBottom: 8}} />
+          <h1 style={{margin: 0}}>Pedido de Grafica</h1>
+        </div>
       </header>
 
       <form className="task-form" onSubmit={(e) => { e.preventDefault(); addTask(); }}>
+        <label for="description">Ingrese la descripcion de la tarea:</label>
         <input
           type="text"
+          id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Descripción de la tarea"
           required
         />
+        <label for="responsible">Ingrese su nombre:</label>
         <input
           type="text"
+          id="responsible"
           value={responsible}
           onChange={(e) => setResponsible(e.target.value)}
-          placeholder="Responsable"
+          placeholder="Autor"
         />
+        <label for="date">Ingrese la fecha de vencimiento de la tarea:</label>
         <input
           type="date"
+          id="date"
           value={dueDate}
           min={minDueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
+        <label for="notes">Ingrese comentarios adicionales:</label>
         <textarea
           value={notes}
+          id="notes"
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notas adicionales"
         />
+        <label for="files">Ingrese archivos adjuntos (documentos o imagenes):</label>
         <input
           type="file"
-          accept="image/*"
-          onChange={(e) => setImage(e.target.files[0])}
+          id="files"
+          multiple
+          onChange={(e) => setFiles(Array.from(e.target.files))}
         />
 
         {/* Voice recording UI */}
         <div style={{ margin: '10px 0' }}>
-          <label>Mensaje de voz:</label><br />
+          <label>Grabe un mensaje de voz opcional:</label><br />
           {!recording && (
             <button type="button" onClick={startRecording} style={{marginRight: 8}}>Grabar</button>
           )}
@@ -180,9 +204,10 @@ function App() {
           {audioURL && (
             <audio src={audioURL} controls style={{ verticalAlign: 'middle', marginLeft: 8 }} />
           )}
+          <label>(Escuche la grabacion y verifique que sea correcta)</label><br />
         </div>
 
-        <button type="submit">Agregar</button>
+        <button type="submit">Agregar Tarea</button>
       </form>
 
       <ul className="task-list">
@@ -190,17 +215,43 @@ function App() {
           <li key={task.id} className="task-card">
             <div>
               <strong>{task.description}</strong>
+              {task.completed && <span style={{color: 'green', marginLeft: 8}}>(Completada)</span>}
+              {task.canceled && <span style={{color: 'red', marginLeft: 8}}>(Cancelada)</span>}
             </div>
             {task.responsible && <div>Responsable: {task.responsible}</div>}
             {task.due_date && <div>Vence: {task.due_date}</div>}
             {task.notes && <div>Notas: {task.notes}</div>}
-            {task.image && (
+            {/* Show all attached files */}
+            {task.files && Array.isArray(task.files) && task.files.length > 0 && (
               <div>
-                <img src={task.image} alt="Adjunto" />
+                <div>Archivos adjuntos:</div>
+                <ul>
+                  {task.files.map((url, idx) => (
+                    <li key={idx}>
+                      {url.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                        <img src={url} alt={`Adjunto ${idx+1}`} style={{maxWidth: 120, maxHeight: 120}} />
+                      ) : url.match(/\.(mp3|wav|ogg|webm)$/i) ? (
+                        <audio src={url} controls />
+                      ) : (
+                        <a href={url} target="_blank" rel="noopener noreferrer">Archivo {idx+1}</a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
-            {!task.completed && (
-              <button onClick={() => completeTask(task.id)}>Completar</button>
+            {/* Show audio if present and not in files */}
+            {task.audio && (!task.files || !task.files.includes(task.audio)) && (
+              <div>
+                <div>Mensaje de voz:</div>
+                <audio src={task.audio} controls />
+              </div>
+            )}
+            {!(task.completed || task.canceled) && (
+              <>
+                <button onClick={() => completeTask(task.id)}>Completar</button>
+                <button onClick={() => cancelTask(task.id)} style={{marginLeft: 8, color: 'red'}}>Cancelar</button>
+              </>
             )}
           </li>
         ))}

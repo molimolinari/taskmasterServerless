@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 import './App.css'  // 👈 nuevo
 
 const API_URL = import.meta.env.VITE_API_URL
@@ -7,14 +9,14 @@ function App() {
   const [tasks, setTasks] = useState([])
   const [description, setDescription] = useState("")
   const [responsible, setResponsible] = useState("")
-  const [dueDate, setDueDate] = useState("")
+  const [dueDate, setDueDate] = useState(null)
   const [notes, setNotes] = useState("")
   const [files, setFiles] = useState([])
   // Calculate min date (today + 2 days)
   const minDueDate = (() => {
     const d = new Date();
     d.setDate(d.getDate() + 2);
-    return d.toISOString().split('T')[0];
+    return d;
   })();
 
   // Voice recording state
@@ -96,7 +98,7 @@ function App() {
     const taskData = {
       description,
       responsible,
-      dueDate,
+      dueDate: dueDate ? dueDate.toISOString().split('T')[0] : null,
       notes,
       completed: false,
       files: fileUrls,
@@ -111,7 +113,7 @@ function App() {
 
     setDescription("")
     setResponsible("")
-    setDueDate("")
+    setDueDate(null)
     setNotes("")
   setFiles([])
     setAudioBlob(null)
@@ -170,12 +172,14 @@ function App() {
           placeholder="Tu nombre"
         />
         <label for="date">Fecha de vencimiento:</label>
-        <input
-          type="date"
+        <DatePicker
           id="date"
-          value={dueDate}
-          min={minDueDate}
-          onChange={(e) => setDueDate(e.target.value)}
+          selected={dueDate}
+          onChange={(date) => setDueDate(date)}
+          minDate={minDueDate}
+          dateFormat="dd/MM/yyyy"
+          placeholderText="Selecciona una fecha"
+          className="date-picker-input"
         />
         <label for="notes">Comentarios adicionales:</label>
         <textarea

@@ -147,12 +147,12 @@ function App() {
       <header className="app-header">
         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%'}}>
           <img src="/logo.png" alt="TaskMaster Logo" className="logo" style={{marginBottom: 8}} />
-          <h1 style={{margin: 0}}>Pedido de Grafica</h1>
+          <h1 style={{margin: 0}}>Pedido de Gráfica</h1>
         </div>
       </header>
 
       <form className="task-form" onSubmit={(e) => { e.preventDefault(); addTask(); }}>
-        <label for="description">Ingrese la descripcion de la tarea:</label>
+        <label for="description">Descripción de la tarea:</label>
         <input
           type="text"
           id="description"
@@ -161,15 +161,15 @@ function App() {
           placeholder="Descripción de la tarea"
           required
         />
-        <label for="responsible">Ingrese su nombre:</label>
+        <label for="responsible">Solicitado por:</label>
         <input
           type="text"
           id="responsible"
           value={responsible}
           onChange={(e) => setResponsible(e.target.value)}
-          placeholder="Nombre"
+          placeholder="Tu nombre"
         />
-        <label for="date">Ingrese la fecha de vencimiento de la tarea:</label>
+        <label for="date">Fecha de vencimiento:</label>
         <input
           type="date"
           id="date"
@@ -177,14 +177,14 @@ function App() {
           min={minDueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
-        <label for="notes">Ingrese comentarios adicionales:</label>
+        <label for="notes">Comentarios adicionales:</label>
         <textarea
           value={notes}
           id="notes"
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notas adicionales"
         />
-        <label for="files">Ingrese archivos adjuntos (documentos o imagenes):</label>
+        <label for="files">Archivos adjuntos:</label>
         <input
           type="file"
           id="files"
@@ -194,68 +194,25 @@ function App() {
 
         {/* Voice recording UI */}
         <div style={{ margin: '10px 0' }}>
-          <label>Grabe un mensaje de voz opcional:</label><br />
-          {!recording && (
-            <button type="button" onClick={startRecording} style={{marginRight: 8}}>Grabar</button>
-          )}
-          {recording && (
-            <button type="button" onClick={stopRecording} style={{marginRight: 8}}>Detener</button>
-          )}
+          <label>Mensaje de voz (opcional):</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+            {!recording && (
+              <button type="button" onClick={startRecording} className="record-button">Grabar</button>
+            )}
+            {recording && (
+              <button type="button" onClick={stopRecording} className="record-button">Detener</button>
+            )}
+            {audioURL && (
+              <audio src={audioURL} controls style={{ flex: '1', minWidth: '200px' }} />
+            )}
+          </div>
           {audioURL && (
-            <audio src={audioURL} controls style={{ verticalAlign: 'middle', marginLeft: 8 }} />
+            <label style={{ color: '#718096', fontSize: '14px', fontWeight: 400, marginTop: '4px' }}>(Escuche la grabacion y verifique que sea correcta)</label>
           )}
-          <label>(Escuche la grabacion y verifique que sea correcta)</label><br />
         </div>
 
         <button type="submit">Agregar Tarea</button>
       </form>
-
-      <ul className="task-list">
-        {tasks.map(task => (
-          <li key={task.id} className="task-card">
-            <div>
-              <strong>{task.description}</strong>
-              {task.completed && <span style={{color: 'green', marginLeft: 8}}>(Completada)</span>}
-              {task.canceled && <span style={{color: 'red', marginLeft: 8}}>(Cancelada)</span>}
-            </div>
-            {task.responsible && <div>Responsable: {task.responsible}</div>}
-            {task.due_date && <div>Vence: {task.due_date}</div>}
-            {task.notes && <div>Notas: {task.notes}</div>}
-            {/* Show all attached files */}
-            {task.files && Array.isArray(task.files) && task.files.length > 0 && (
-              <div>
-                <div>Archivos adjuntos:</div>
-                <ul>
-                  {task.files.map((url, idx) => (
-                    <li key={idx}>
-                      {url.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                        <img src={url} alt={`Adjunto ${idx+1}`} style={{maxWidth: 120, maxHeight: 120}} />
-                      ) : url.match(/\.(mp3|wav|ogg|webm)$/i) ? (
-                        <audio src={url} controls />
-                      ) : (
-                        <a href={url} target="_blank" rel="noopener noreferrer">Archivo {idx+1}</a>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {/* Show audio if present and not in files */}
-            {task.audio && (!task.files || !task.files.includes(task.audio)) && (
-              <div>
-                <div>Mensaje de voz:</div>
-                <audio src={task.audio} controls />
-              </div>
-            )}
-            {!(task.completed || task.canceled) && (
-              <>
-                <button onClick={() => completeTask(task.id)}>Completar</button>
-                <button onClick={() => cancelTask(task.id)} style={{marginLeft: 8, color: 'red'}}>Cancelar</button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
